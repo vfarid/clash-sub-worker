@@ -71,14 +71,14 @@ export default {
         if (includeOriginalConfigs) {
           mergedConfigList = mergedConfigList.concat(
             getMultipleRandomElements(
-              vmessConfigList.map(decodeVmess).filter(cnf => (!!cnf && cnf.id)).map(cnf => toClash(cnf, "vmess")).filter(cnf => !!cnf),
+              vmessConfigList.map(decodeVmess).filter(cnf => (cnf && cnf.id)).map(cnf => toClash(cnf, "vmess")).filter(cnf => (cnf && cnf.uuid)),
               maxPerType
             )
           )
         }
         mergedConfigList = mergedConfigList.concat(
           getMultipleRandomElements(
-            vmessConfigList.map(decodeVmess).map(cnf => mixConfig(cnf, url, "vmess")).filter(cnf => (!!cnf && cnf.id)).map(cnf => toClash(cnf, "vmess")),
+            vmessConfigList.map(decodeVmess).map(cnf => mixConfig(cnf, url, "vmess")).filter(cnf => (cnf && cnf.id)).map(cnf => toClash(cnf, "vmess")),
             maxPerType
           )
         )
@@ -150,26 +150,27 @@ function mixConfig(conf, url, protocol) {
 }
 
 function getMultipleRandomElements(arr, num) {
-  var shuffled = [...arr].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, num);
+  var shuffled = arr //[...arr].sort(() => 0.5 - Math.random())
+  return shuffled.slice(0, num)
 }
 
 function isIp(str) {
   try {
-    if (str == "" || str == undefined) return false;
+    if (str == "" || str == undefined) return false
     if (!/^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])(\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])){2}\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-4])$/.test(str)) {
-      return false;
+      return false
     }
-    var ls = str.split('.');
+    var ls = str.split('.')
     if (ls == null || ls.length != 4 || ls[3] == "0" || parseInt(ls[3]) === 0) {
-      return false;
+      return false
     }
-    return true;
+    return true
   } catch (e) { }
-  return false;
+  return false
 }
 
 function toClash(conf, protocol) {
+  const regexUUID = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/gi
   var config = {}
   try {
     config = {
@@ -191,10 +192,13 @@ function toClash(conf, protocol) {
         }
       }
     }
-    config.name = config.name.replace(/[^A-Za-z0-9\-\ ]/g, "") + " " + Math.floor(Math.random() * 10000)
+    config.name = config.name.replace(/[^\x20-\x7E]/g, "").replace(/[\s\/:|\[\]@\(\)\.]/g, "") + "-" + Math.floor(Math.random() * 10000)
+    if (!regexUUID.test(config.uuid)) {
+      return {}
+    }
     return config
   } catch (e) {
-    return conf
+    return {}
   }
 }
 
@@ -219,7 +223,22 @@ dns:
     - tls://dns.google:853
 
 proxies:
+${configList.map(cnf => "  - " + JSON.stringify(cnf)).join("\n")}
+
+proxy-groups:
+  - name: main-group
+    type: url-test
+    tolerance: 300
+    url: 'https://www.google.com/generate_204'
+    interval: 15
+    lazy: false
+    proxies:
+${configList.map(cnf => "      - " + cnf.name.trim()).join("\n")}
+
+rules:
+  - GEOIP,IR,DIRECT
+  - MATCH,main-group
+
 `
-  yaml = yaml + configList.map(cnf => "  - " + JSON.stringify(cnf)).join("\n")
-  return yaml
+return yaml;
 }
