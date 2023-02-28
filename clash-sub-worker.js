@@ -1,3 +1,5 @@
+// Version 1.0.3
+
 const maxConfigItems = 500
 const maxPerType = 200
 const includeOriginalConfigs = true
