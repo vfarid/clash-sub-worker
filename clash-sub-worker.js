@@ -5,7 +5,6 @@ const includeOriginalConfigs = true
 const subLinks = [
   "https://raw.githubusercontent.com/freefq/free/master/v2",
   "https://raw.githubusercontent.com/Pawdroid/Free-servers/main/sub",
-  "https://raw.githubusercontent.com/mianfeifq/share/main/data2023025.txt",
   "https://raw.githubusercontent.com/aiboboxx/v2rayfree/main/v2",
   "https://raw.githubusercontent.com/AzadNetCH/Clash/main/V2Ray.txt"
 ]
@@ -39,10 +38,14 @@ export default {
 
       var configList = []
       for (var subLink of subLinks) {
-        configList = configList.concat(await fetch(subLink).then(r => r.text()).then(a => atob(a)).then(t => t.split("\n")))
+        try {
+          configList = configList.concat(await fetch(subLink).then(r => r.text()).then(a => atob(a)).then(t => t.split("\n")))
+        } catch (e) { }
       }
       for (var cnfLink of cnfLinks) {
-        configList = configList.concat(await fetch(cnfLink).then(r => r.text()).then(t => t.split("\n")))
+        try {
+          configList = configList.concat(await fetch(cnfLink).then(r => r.text()).then(t => t.split("\n")))
+        } catch (e) { }
       }
       
       var vmessConfigList = configList.filter(cnf => (cnf.search("vmess://") == 0))
@@ -226,18 +229,18 @@ proxies:
 ${configList.map(cnf => "  - " + JSON.stringify(cnf)).join("\n")}
 
 proxy-groups:
-  - name: main-group
+  - name: maingroup
     type: url-test
     tolerance: 300
     url: 'https://www.google.com/generate_204'
-    interval: 15
+    interval: 30
     lazy: false
     proxies:
 ${configList.map(cnf => "      - " + cnf.name.trim()).join("\n")}
 
 rules:
   - GEOIP,IR,DIRECT
-  - MATCH,main-group
+  - MATCH,maingroup
 
 `
 return yaml;
